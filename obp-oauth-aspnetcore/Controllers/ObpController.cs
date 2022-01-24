@@ -69,7 +69,7 @@ namespace obp_oauth_aspnetcore.Controllers
                 var hashBytes = hmacsha1.ComputeHash(signatureBaseBytes);
                 signatureString = Convert.ToBase64String(hashBytes);
             }
-            signatureString = EscapeUriDataStringRfc3986(signatureString);
+            SignatureString = EscapeUriDataStringRfc3986(signatureString);
 
             string SimpleQuote(string s) => '"' + s + '"';
             var header =
@@ -81,7 +81,7 @@ namespace obp_oauth_aspnetcore.Controllers
                 "oauth_token=" + SimpleQuote(tokenValue) + "," +
                 "oauth_version=" + SimpleQuote("1.0") + "," +
                 "oauth_callback=" + SimpleQuote(EscapeUriDataStringRfc3986(UrlCallback)) + "," +
-                "oauth_signature=" + SimpleQuote(signatureString);
+                "oauth_signature=" + SimpleQuote(SignatureString);
 
             httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, header);
 
@@ -138,6 +138,7 @@ namespace obp_oauth_aspnetcore.Controllers
 
         private static string OAuthToken { get; set; }
         private static string OAuthTokenSecret { get; set; }
+        private static string SignatureString { get; set; }
 
         [HttpGet]
         public IActionResult Callback()
@@ -166,12 +167,12 @@ namespace obp_oauth_aspnetcore.Controllers
             var signatureBaseString = Escape(httpWebRequest.Method.ToUpper()) + "&";
             signatureBaseString += EscapeUriDataStringRfc3986(RequestAuthTokenUrl.ToLower()) + "&";
             signatureBaseString += EscapeUriDataStringRfc3986(
-                "oauth_verifier=" + EscapeUriDataStringRfc3986(verifier) + "&" +
-                "oauth_token=" + EscapeUriDataStringRfc3986(OAuthToken) + "&" +
                 "oauth_consumer_key=" + EscapeUriDataStringRfc3986(ConsumerKey) + "&" +
                 "oauth_nonce=" + EscapeUriDataStringRfc3986(nonce) + "&" +
                 "oauth_signature_method=" + EscapeUriDataStringRfc3986("HMAC-SHA1") + "&" +
                 "oauth_timestamp=" + EscapeUriDataStringRfc3986(timeStamp) + "&" +
+                "oauth_token=" + EscapeUriDataStringRfc3986(token) + "&" +
+                "oauth_verifier=" + EscapeUriDataStringRfc3986(verifier) + "&" +
                 "oauth_version=" + EscapeUriDataStringRfc3986("1.0"));
             Console.WriteLine(@"signatureBaseString: " + signatureBaseString);
 
@@ -189,15 +190,15 @@ namespace obp_oauth_aspnetcore.Controllers
 
             string SimpleQuote(string s) => '"' + s + '"';
             var header =
-                "OAuth realm=" + SimpleQuote("") + "," +
+                "OAuth " +
                 "oauth_verifier=" + SimpleQuote(verifier) + "," +
-                "oauth_token=" + SimpleQuote(OAuthTokenSecret) + "," +
+                "oauth_token=" + SimpleQuote(OAuthToken) + "," +
                 "oauth_consumer_key=" + SimpleQuote(ConsumerKey) + "," +
                 "oauth_nonce=" + SimpleQuote(nonce) + "," +
+                "oauth_signature=" + SimpleQuote(signatureString) + "," +
                 "oauth_signature_method=" + SimpleQuote("HMAC-SHA1") + "," +
                 "oauth_timestamp=" + SimpleQuote(timeStamp) + "," +
-                "oauth_version=" + SimpleQuote("1.0") + "," +
-                "oauth_signature=" + SimpleQuote(signatureString);
+                "oauth_version=" + SimpleQuote("1.0");
 
             httpWebRequest.Headers.Add(HttpRequestHeader.Authorization, header);
 
